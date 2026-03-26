@@ -1,0 +1,12 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.categoriesRouter = void 0;
+const express_1 = require("express");
+const auth_1 = require("../middleware/auth");
+const pool_1 = require("../db/pool");
+exports.categoriesRouter = (0, express_1.Router)({ mergeParams: true });
+exports.categoriesRouter.use(auth_1.requireAuth);
+exports.categoriesRouter.get('/', (0, auth_1.allowRoles)('owner', 'admin', 'member', 'viewer'), async (req, res) => { const q = await pool_1.pool.query('SELECT * FROM categories WHERE board_id=$1 ORDER BY name', [req.params.boardId]); res.json({ categories: q.rows }); });
+exports.categoriesRouter.post('/', (0, auth_1.allowRoles)('owner', 'admin'), async (req, res) => { const q = await pool_1.pool.query('INSERT INTO categories(board_id,name,color) VALUES($1,$2,$3) RETURNING *', [req.params.boardId, req.body.name, req.body.color ?? '#6b7280']); res.json({ category: q.rows[0] }); });
+exports.categoriesRouter.patch('/:categoryId', (0, auth_1.allowRoles)('owner', 'admin'), async (req, res) => { const q = await pool_1.pool.query('UPDATE categories SET name=COALESCE($1,name),color=COALESCE($2,color),updated_at=NOW() WHERE id=$3 AND board_id=$4 RETURNING *', [req.body.name ?? null, req.body.color ?? null, req.params.categoryId, req.params.boardId]); res.json({ category: q.rows[0] }); });
+exports.categoriesRouter.delete('/:categoryId', (0, auth_1.allowRoles)('owner', 'admin'), async (req, res) => { await pool_1.pool.query('DELETE FROM categories WHERE id=$1 AND board_id=$2', [req.params.categoryId, req.params.boardId]); res.json({ ok: true }); });
