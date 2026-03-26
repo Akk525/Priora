@@ -19,16 +19,48 @@ async function seed() {
         const board1 = b1.rows[0].id;
         const board2 = b2.rows[0].id;
         await c.query(`INSERT INTO board_members(board_id,user_id,role) VALUES ($1,$2,'owner'),($1,$3,'admin'),($4,$3,'owner'),($4,$2,'member') ON CONFLICT DO NOTHING`, [board1, user1, user2, board2]);
-        const cols = await c.query(`INSERT INTO columns(board_id,title,position) VALUES ($1,'Backlog',1),($1,'In Progress',2),($1,'Done',3),($2,'Todo',1),($2,'Doing',2),($2,'Done',3) RETURNING id, board_id, title`, [board1, board2]);
-        const backlog = cols.rows.find((r) => r.board_id === board1 && r.title === 'Backlog')?.id;
-        const progress = cols.rows.find((r) => r.board_id === board1 && r.title === 'In Progress')?.id;
-        const cats = await c.query(`INSERT INTO categories(board_id,name,color) VALUES ($1,'Feature','#3b82f6'),($1,'Bug','#ef4444'),($2,'Ops','#8b5cf6') RETURNING id,name,board_id`, [board1, board2]);
-        const feature = cats.rows.find((r) => r.board_id === board1 && r.name === 'Feature')?.id;
+        const cols = await c.query(`INSERT INTO columns(board_id,title,position) VALUES
+      ($1,'To Do',1),($1,'In Progress',2),($1,'In Review',3),($1,'Done',4),
+      ($2,'To Do',1),($2,'In Progress',2),($2,'In Review',3),($2,'Done',4)
+      RETURNING id, board_id, title`, [board1, board2]);
+        const colB1 = (title) => cols.rows.find((r) => r.board_id === board1 && r.title === title)?.id;
+        const todo = colB1('To Do');
+        const inProgress = colB1('In Progress');
+        const inReview = colB1('In Review');
+        const done = colB1('Done');
+        const cats = await c.query(`INSERT INTO categories(board_id,name,color) VALUES
+      ($1,'Design','#3b82f6'),
+      ($1,'Backend','#6366f1'),
+      ($1,'DevOps','#f59e0b'),
+      ($1,'Frontend','#10b981'),
+      ($1,'Documentation','#8b5cf6'),
+      ($2,'Feature','#3b82f6'),
+      ($2,'Bug','#ef4444')
+      RETURNING id,name,board_id`, [board1, board2]);
+        const cat = (name) => cats.rows.find((r) => r.board_id === board1 && r.name === name)?.id;
+        const due = '2025-03-20';
         await c.query(`INSERT INTO cards(board_id,column_id,title,description,assignee_id,priority,category_id,start_date,due_date,position,archived) VALUES
-      ($1,$2,'Create landing page','Initial MVP page',$3,'high',$4,CURRENT_DATE,CURRENT_DATE + INTERVAL '3 day',1,false),
-      ($1,$5,'Fix auth bug','Resolve cookie issue',$6,'urgent',$4,CURRENT_DATE,CURRENT_DATE + INTERVAL '1 day',1,false),
-      ($1,$2,'Old archived task','Archived sample',$3,'low',$4,NULL,NULL,2,true)
-    `, [board1, backlog, user1, feature, progress, user2]);
+      ($1,$2,'Design homepage mockup','Create wireframes and mockups for the new homepage design',$3,'high',$4,NULL,$5::date,1,false),
+      ($1,$2,'Set up CI/CD pipeline','Configure GitHub Actions for automated testing and deployment',$3,'medium',$6,NULL,$5::date,2,false),
+      ($1,$7,'Implement user authentication','Add login/logout functionality with JWT tokens',$8,'high',$9,NULL,$5::date,1,false),
+      ($1,$10,'Update API documentation','Document all new endpoints and update existing ones',$3,'low',$11,NULL,$5::date,1,false),
+      ($1,$12,'Setup project structure','Initialize React project with TypeScript and necessary dependencies',$8,'high',$13,NULL,$5::date,1,false),
+      ($1,$2,'Old archived task','Archived sample',$3,'low',$4,NULL,NULL,3,true)
+      `, [
+            board1,
+            todo,
+            user1,
+            cat('Design'),
+            due,
+            cat('DevOps'),
+            inProgress,
+            user2,
+            cat('Backend'),
+            inReview,
+            cat('Documentation'),
+            done,
+            cat('Frontend'),
+        ]);
         await c.query(`INSERT INTO board_invitations(board_id,email,role,status,invited_by_user_id,expires_at) VALUES($1,$2,'member','pending',$3,NOW()+INTERVAL '7 day')`, [board1, 'newuser@priora.local', user1]);
         await c.query('COMMIT');
         console.log('Seed completed');

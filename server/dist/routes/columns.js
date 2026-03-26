@@ -10,6 +10,17 @@ exports.columnsRouter.get('/', (0, auth_1.allowRoles)('owner', 'admin', 'member'
     const q = await pool_1.pool.query('SELECT * FROM columns WHERE board_id=$1 ORDER BY position', [req.params.boardId]);
     res.json({ columns: q.rows });
 });
+/** Add standard columns when a board has none (e.g. boards created before defaults existed). */
+exports.columnsRouter.post('/defaults', (0, auth_1.allowRoles)('owner', 'admin'), async (req, res) => {
+    const boardId = req.params.boardId;
+    const count = await pool_1.pool.query('SELECT COUNT(*)::int AS c FROM columns WHERE board_id=$1', [boardId]);
+    if (Number(count.rows[0]?.c) > 0) {
+        return res.status(400).json({ error: 'Board already has columns' });
+    }
+    await pool_1.pool.query(`INSERT INTO columns(board_id,title,position) VALUES ($1,'To Do',1),($1,'In Progress',2),($1,'In Review',3),($1,'Done',4)`, [boardId]);
+    const q = await pool_1.pool.query('SELECT * FROM columns WHERE board_id=$1 ORDER BY position', [boardId]);
+    res.json({ columns: q.rows });
+});
 exports.columnsRouter.post('/', (0, auth_1.allowRoles)('owner', 'admin'), async (req, res) => {
     const { title, position } = req.body;
     const q = await pool_1.pool.query('INSERT INTO columns(board_id,title,position) VALUES($1,$2,$3) RETURNING *', [req.params.boardId, title, position]);

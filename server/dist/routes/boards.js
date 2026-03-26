@@ -12,9 +12,28 @@ exports.boardsRouter.get('/', async (req, res) => {
 });
 exports.boardsRouter.post('/', async (req, res) => {
     const { name, description, color } = req.body;
-    const b = await pool_1.pool.query('INSERT INTO boards(name,description,color,owner_id) VALUES($1,$2,$3,$4) RETURNING *', [name, description ?? null, color ?? '#4f46e5', req.user.id]);
-    await pool_1.pool.query('INSERT INTO board_members(board_id,user_id,role) VALUES($1,$2,$3)', [b.rows[0].id, req.user.id, 'owner']);
-    res.json({ board: b.rows[0] });
+    const client = await pool_1.pool.connect();
+    try {
+        await client.query('BEGIN');
+        const b = await client.query('INSERT INTO boards(name,description,color,owner_id) VALUES($1,$2,$3,$4) RETURNING *', [name, description ?? null, color ?? '#4f46e5', req.user.id]);
+        const boardId = b.rows[0].id;
+        await client.query('INSERT INTO board_members(board_id,user_id,role) VALUES($1,$2,$3)', [boardId, req.user.id, 'owner']);
+        await client.query(`INSERT INTO columns(board_id,title,position) VALUES ($1,'To Do',1),($1,'In Progress',2),($1,'In Review',3),($1,'Done',4)`, [boardId]);
+        await client.query('COMMIT');
+        res.json({ board: b.rows[0] });
+    }
+    catch (e) {
+        try {
+            await client.query('ROLLBACK');
+        }
+        catch {
+            /* ignore */
+        }
+        throw e;
+    }
+    finally {
+        client.release();
+    }
 });
 exports.boardsRouter.get('/:boardId', (0, auth_1.allowRoles)('owner', 'admin', 'member', 'viewer'), async (req, res) => {
     const b = await pool_1.pool.query('SELECT * FROM boards WHERE id=$1', [req.params.boardId]);

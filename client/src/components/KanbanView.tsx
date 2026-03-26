@@ -13,13 +13,13 @@ import {
 import { SortableContext, arrayMove, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import {
+  Archive,
   Calendar,
   Ellipsis,
   GripVertical,
   MessageCircle,
   Plus,
   Tag,
-  Trash2,
 } from 'lucide-react';
 import type { Card, Category, Column, Member } from '../types';
 
@@ -483,7 +483,7 @@ function SortableCard({
         <div className="relative min-w-0 flex-1">
           <button
             type="button"
-            title="Delete card"
+            title="Archive card"
             className="absolute right-0 top-0 z-10 rounded-full bg-red-500 p-1 text-white opacity-0 shadow-lg transition hover:bg-red-600 group-hover/card:opacity-100"
             onPointerDown={(e) => e.stopPropagation()}
             onClick={(e) => {
@@ -491,7 +491,7 @@ function SortableCard({
               onDelete();
             }}
           >
-            <Trash2 className="h-3 w-3" />
+            <Archive className="h-3 w-3" />
           </button>
           <div
             className="cursor-pointer pr-7"

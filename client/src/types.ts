@@ -25,6 +25,7 @@ export type Card = {
   due_date?: string;
   completed_at?: string | null;
   archived: boolean;
+  archived_at?: string | null;
   position: number;
   assignee_name?: string;
   category_name?: string;
