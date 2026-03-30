@@ -1,5 +1,4 @@
 # Priora (Stage 2 Prototype)
-
 Priora is a local-first Kanban/task management prototype for CS348 with a React + TypeScript frontend, Node/Express + TypeScript backend, and PostgreSQL as the single source of truth via raw SQL (`pg`).
 
 ## Stack
@@ -35,6 +34,74 @@ Priora is a local-first Kanban/task management prototype for CS348 with a React 
 ## Demo Accounts
 - `demo@priora.local` / `password123`
 - `alex@priora.local` / `password123`
+
+## Database Schema
+
+### Enum and Custom Types
+- **board_role**: `'owner'`, `'admin'`, `'member'`, `'viewer'`
+- **invitation_status**: `'pending'`, `'accepted'`, `'rejected'`, `'expired'`, `'cancelled'`
+- **card_priority**: `'low'`, `'medium'`, `'high'`, `'urgent'`
+
+### Core Tables
+
+#### 1. `users`
+- **Primary Key**: `id` (UUID)
+- **Columns**: `email`, `name`, `avatar_url`, `password_hash`, `created_at`, `updated_at`
+
+#### 2. `sessions`
+- **Primary Key**: `id` (UUID)
+- **Foreign Keys**: `user_id` → `users(id)`
+- **Columns**: `token_hash`, `user_agent`, `ip_address`, `expires_at`, `created_at`
+
+#### 3. `boards`
+- **Primary Key**: `id` (UUID)
+- **Foreign Keys**: `owner_id` → `users(id)`
+- **Columns**: `name`, `description`, `color`, `created_at`, `updated_at`
+
+#### 4. `board_members`
+- **Primary Key**: Composite (`board_id`, `user_id`)
+- **Foreign Keys**: `board_id` → `boards(id)`, `user_id` → `users(id)`
+- **Columns**: `role`, `joined_at`
+
+#### 5. `board_invitations`
+- **Primary Key**: `id` (UUID)
+- **Foreign Keys**: `board_id` → `boards(id)`, `invited_by_user_id` → `users(id)`
+- **Columns**: `email`, `role`, `status`, `token`, `expires_at`, `responded_at`, `created_at`
+
+#### 6. `columns`
+- **Primary Key**: `id` (UUID)
+- **Foreign Keys**: `board_id` → `boards(id)`
+- **Columns**: `title`, `position`, `created_at`, `updated_at`
+
+#### 7. `categories`
+- **Primary Key**: `id` (UUID)
+- **Foreign Keys**: `board_id` → `boards(id)`
+- **Columns**: `name`, `color`, `created_at`, `updated_at`
+
+### Card-Related Tables
+
+#### 8. `cards`
+- **Primary Key**: `id` (UUID)
+- **Foreign Keys**: `board_id` → `boards(id)`, `column_id` → `columns(id)`, `assignee_id` → `users(id)`, `category_id` → `categories(id)`
+- **Columns**: `title`, `description`, `priority`, `start_date`, `due_date`, `completed_at`, `archived`, `archived_at`, `estimate_hours`, `position`, `created_at`, `updated_at`
+
+#### 9. `card_labels`
+- **Primary Key**: Composite (`card_id`, `label`)
+- **Foreign Keys**: `card_id` → `cards(id)`
+
+#### 10. `card_dependencies`
+- **Primary Key**: Composite (`card_id`, `depends_on_card_id`)
+- **Foreign Keys**: `card_id` → `cards(id)`, `depends_on_card_id` → `cards(id)`
+
+#### 11. `card_comments`
+- **Primary Key**: `id` (UUID)
+- **Foreign Keys**: `card_id` → `cards(id)`, `author_id` → `users(id)`
+- **Columns**: `content`, `created_at`, `updated_at`
+
+#### 12. `completion_records`
+- **Primary Key**: `id` (UUID)
+- **Foreign Keys**: `board_id` → `boards(id)`, `card_id` → `cards(id)`, `assignee_id` → `users(id)`
+- **Columns**: `priority`, `estimate_hours`, `completed_at`
 
 ## Stage 2 Rubric Mapping
 - Requirement 1 (`cards` main table): add/edit/delete cards from Kanban UI and API.
@@ -82,6 +149,3 @@ Implemented endpoints include:
 - Cards: list/create/update/delete/move/archive/restore
 - Comments: create/update/delete
 - Analytics/Report: board analytics + filtered cards report
-
-## AI Usage
-AI assistance was used to scaffold boilerplate, generate SQL migrations, route handlers, and frontend wiring. All database interactions are explicit raw SQL using parameterized placeholders and were reviewed for Stage 2 constraints.
