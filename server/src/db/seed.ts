@@ -77,6 +77,37 @@ async function seed() {
 
     await c.query(`INSERT INTO board_invitations(board_id,email,role,status,invited_by_user_id,expires_at) VALUES($1,$2,'member','pending',$3,NOW()+INTERVAL '7 day')`, [board1, 'newuser@priora.local', user1]);
 
+    // Append new realistic demo cards
+    await c.query(
+      `INSERT INTO cards(board_id,column_id,title,description,assignee_id,priority,category_id,due_date,completed_at,position,archived,estimate_hours) VALUES
+      ($1,$2,'Fix navigation bug','Dropdown menu does not close on outside click',$6,'urgent',$9,NOW() - INTERVAL '3 days',NULL,4,false,2),
+      ($1,$2,'Write blog post','Draft Q1 release announcement',NULL,'low',$8,NOW() + INTERVAL '10 days',NULL,5,false,4),
+      ($1,$3,'Migrate database','Move from SQLite to PostgreSQL in production',$7,'urgent',$9,NOW() - INTERVAL '1 day',NULL,2,false,8),
+      ($1,$3,'Update dependencies','Bump all React and Vite packages',$6,'medium',$12,NOW() + INTERVAL '5 days',NULL,3,false,2),
+      ($1,$4,'Refactor auth context','Use zustand instead of React Context',NULL,'medium',$12,NOW() + INTERVAL '2 days',NULL,2,false,4),
+      ($1,$4,'Design system audit','Check for contrast and accessibility issues',$7,'low',$8,NOW() + INTERVAL '14 days',NULL,3,false,12),
+      ($1,$5,'Containerize app','Write Dockerfile and docker-compose',$6,'high',$9,NOW() - INTERVAL '5 days',NOW() - INTERVAL '2 days',2,false,4),
+      ($1,$5,'Setup error monitoring','Integrate Sentry to capture frontend exceptions',$7,'medium',$9,NOW() - INTERVAL '10 days',NOW() - INTERVAL '9 days',3,false,2),
+      ($1,$5,'Fix typo in settings','Minor typo on the billing page',NULL,'low',$12,NULL,NOW() - INTERVAL '20 days',4,false,1),
+      ($1,$2,'Deprecated feature X','Remove old code for feature X',$6,'low',$11,NULL,NULL,6,true,4),
+      ($1,$3,'Old marketing site','Archived task for reference',$7,'high',$8,NULL,NULL,4,true,8),
+      ($1,$4,'Cancel subscription plan','User reported issues, plan removed',NULL,'urgent',$10,NULL,NULL,4,true,2)`,
+      [
+        board1,             // $1
+        todo,               // $2
+        inProgress,         // $3
+        inReview,           // $4
+        done,               // $5
+        user1,              // $6
+        user2,              // $7
+        cat('Design')!,     // $8
+        cat('DevOps')!,     // $9
+        cat('Backend')!,    // $10
+        cat('Documentation')!, // $11
+        cat('Frontend')!    // $12
+      ]
+    );
+
     await c.query('COMMIT');
     console.log('Seed completed');
   } catch (e) {

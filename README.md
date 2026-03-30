@@ -103,15 +103,6 @@ Priora is a local-first Kanban/task management prototype for CS348 with a React 
 - **Foreign Keys**: `board_id` → `boards(id)`, `card_id` → `cards(id)`, `assignee_id` → `users(id)`
 - **Columns**: `priority`, `estimate_hours`, `completed_at`
 
-## Stage 2 Rubric Mapping
-- Requirement 1 (`cards` main table): add/edit/delete cards from Kanban UI and API.
-- Requirement 2 (report): `/reports/cards` with filters and summary counts.
-- Dynamic DB-driven UI:
-  - board selector from `/boards`
-  - columns/categories from `/boards/:boardId/columns|categories`
-  - assignees from `/boards/:boardId/members`
-  - invitation inbox from `/invitations/me`
-
 ## UI Features
 - Auth page for login/register/logout
 - Board context bar with role badge and board selector
@@ -120,16 +111,6 @@ Priora is a local-first Kanban/task management prototype for CS348 with a React 
 - Category Manager (create/edit/delete)
 - Members and invitations management
 - Report metrics tiles + filtered cards table
-
-## Demo Script (5-15 minutes)
-1. Login as `demo@priora.local`.
-2. Open `Kanban` and create a new card in a selected column/category/assignee.
-3. Edit the same card via modal (title, priority, due date), then save.
-4. Delete another card to demonstrate full CRUD on `cards`.
-5. Open `Report`, apply filters (column/category/priority/date), and run report.
-6. Return to `Kanban`, modify/archive a card, then rerun report to show changed totals.
-7. Open `Members` tab, send an invitation, and show pending invitation list behavior.
-8. Open `Archive` tab and restore an archived card.
 
 ## Security and Authorization Notes
 - Protected routes require session authentication.
