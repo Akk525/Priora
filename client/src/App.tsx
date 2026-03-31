@@ -249,19 +249,7 @@ export default function App() {
     void runReport(boardId);
   }, [boardId, runReport, tab, user]);
 
-  useEffect(() => {
-    if (!user || !boardId || !canManageBoard || columns.length > 0 || autoSeededBoardId === boardId) return;
-    setAutoSeededBoardId(boardId);
-    void (async () => {
-      try {
-        await api.post(`/boards/${boardId}/columns/defaults`);
-        await loadBoardData(boardId);
-        setNotice('Default Kanban columns added.');
-      } catch (error) {
-        setAppError(getErrorMessage(error, 'Unable to add default columns.'));
-      }
-    })();
-  }, [autoSeededBoardId, boardId, canManageBoard, columns.length, loadBoardData, user]);
+
 
   async function performAction(
     action: () => Promise<void>,

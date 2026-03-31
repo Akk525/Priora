@@ -19,7 +19,7 @@ Priora is a local-first Kanban/task management prototype for CS348 with a React 
 2. Configure env files:
    - `cp server/.env.example server/.env`
    - `cp client/.env.example client/.env`
-   - On macOS Homebrew installs, set `DATABASE_URL` username to your local mac user (example: `postgres://akk@localhost:5432/priora`)
+   - On macOS Homebrew installs, set `DATABASE_URL` username to your local mac user (example: `postgres://username@localhost:5432/priora`)
 3. Install dependencies:
    - `npm run install:all`
 4. Run migrations:
