@@ -285,8 +285,3 @@ AI tools were used in this project in accordance with the course policy.
 - builds were rerun after changes
 - deployment changes were validated with Railway logs and live HTTP checks
 - database behavior was verified with migrations, seeded data, and live auth/report testing
-
-## Additional Project Notes
-- A Stage 3-specific prep document is included at [STAGE3_PREP.md](/Users/akk/Documents/CS 348/Priora/STAGE3_PREP.md).
-- The project currently demonstrates realistic multi-user concepts through board roles, invitation acceptance, and transaction-backed updates.
-- Minor bugs or future improvements can be acknowledged in the final recorded demo if needed.
