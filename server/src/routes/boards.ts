@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import { z } from 'zod';
 import { requireAuth, allowRoles } from '../middleware/auth';
 import { pool } from '../db/pool';
 
@@ -14,7 +15,7 @@ boardsRouter.post('/', async (req, res) => {
   const { name, description, color } = req.body;
   const client = await pool.connect();
   try {
-    await client.query('BEGIN');
+    await client.query('BEGIN ISOLATION LEVEL READ COMMITTED');
     const b = await client.query(
       'INSERT INTO boards(name,description,color,owner_id) VALUES($1,$2,$3,$4) RETURNING *',
       [name, description ?? null, color ?? '#4f46e5', req.user!.id],
@@ -45,8 +46,35 @@ boardsRouter.get('/:boardId', allowRoles('owner', 'admin', 'member', 'viewer'), 
 });
 
 boardsRouter.patch('/:boardId', allowRoles('owner', 'admin'), async (req, res) => {
-  const { name, description, color } = req.body;
-  const b = await pool.query('UPDATE boards SET name=COALESCE($1,name),description=$2,color=COALESCE($3,color),updated_at=NOW() WHERE id=$4 RETURNING *', [name ?? null, description ?? null, color ?? null, req.params.boardId]);
+  const parsed = z.object({
+    name: z.string().min(1).optional(),
+    description: z.string().nullable().optional(),
+    color: z.string().min(1).optional(),
+  }).safeParse(req.body);
+  if (!parsed.success) return res.status(400).json({ error: 'Invalid board payload' });
+
+  const hasName = Object.prototype.hasOwnProperty.call(parsed.data, 'name');
+  const hasDescription = Object.prototype.hasOwnProperty.call(parsed.data, 'description');
+  const hasColor = Object.prototype.hasOwnProperty.call(parsed.data, 'color');
+
+  const b = await pool.query(
+    `UPDATE boards SET
+      name=CASE WHEN $1 THEN $2 ELSE name END,
+      description=CASE WHEN $3 THEN $4 ELSE description END,
+      color=CASE WHEN $5 THEN $6 ELSE color END,
+      updated_at=NOW()
+     WHERE id=$7
+     RETURNING *`,
+    [
+      hasName,
+      parsed.data.name ?? null,
+      hasDescription,
+      parsed.data.description ?? null,
+      hasColor,
+      parsed.data.color ?? null,
+      req.params.boardId,
+    ],
+  );
   res.json({ board: b.rows[0] });
 });
 

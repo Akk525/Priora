@@ -75,7 +75,6 @@ export default function App() {
   const [boardComposerOpen, setBoardComposerOpen] = useState(false);
   const [boardDraft, setBoardDraft] = useState<BoardDraft>(DEFAULT_BOARD_DRAFT);
   const [editingCard, setEditingCard] = useState<Card | null>(null);
-  const [autoSeededBoardId, setAutoSeededBoardId] = useState('');
 
   const deferredSearch = useDeferredValue(kanbanSearch);
 

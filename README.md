@@ -31,6 +31,26 @@ Priora is a local-first Kanban/task management prototype for CS348 with a React 
 7. In another terminal, start frontend:
    - `npm run dev:client`
 
+## Live Deployment
+- Live app: `https://priora-full-production.up.railway.app`
+- Repository: `https://github.com/Akk525/Priora`
+
+## Railway Deployment
+This repo is set up to deploy to Railway as a single web service plus a Railway PostgreSQL service.
+
+1. Create a Railway project.
+2. Add a PostgreSQL service in the same project.
+3. Add a web service from this repo.
+4. Set web service variables:
+   - `DATABASE_URL=${{Postgres.DATABASE_URL}}`
+   - `CLIENT_ORIGIN=https://<your-railway-domain-or-custom-domain>`
+   - `NODE_ENV=production`
+5. Deploy the web service.
+
+Notes:
+- Railway will build using the included [Dockerfile](/Users/akk/Documents/CS 348/Priora/Dockerfile) and apply deploy settings from [railway.toml](/Users/akk/Documents/CS 348/Priora/railway.toml).
+- The Express server serves the built frontend in production, so the browser talks to the API on the same origin.
+
 ## Demo Accounts
 - `demo@priora.local` / `password123`
 - `alex@priora.local` / `password123`
@@ -130,3 +150,15 @@ Implemented endpoints include:
 - Cards: list/create/update/delete/move/archive/restore
 - Comments: create/update/delete
 - Analytics/Report: board analytics + filtered cards report
+
+## AI Usage
+- Tools used: ChatGPT/Codex for debugging, deployment setup, code review, and documentation drafting.
+- Tasks AI assisted with:
+  - identifying build and routing bugs
+  - improving Railway deployment configuration
+  - reviewing backend auth, report, and invitation flows
+  - drafting Stage 3 explanation material for indexes, transactions, and security
+- Verification and modification:
+  - all generated code was reviewed, edited, and tested locally and on Railway
+  - deployment changes were validated with live HTTP checks and Railway logs
+  - database seed/migration behavior was tested directly against Railway Postgres

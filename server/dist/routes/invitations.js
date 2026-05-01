@@ -18,14 +18,20 @@ exports.invitationsRouter.post('/boards/:boardId/invitations', auth_1.requireAut
     res.json({ invitation: q.rows[0] });
 });
 exports.invitationsRouter.get('/invitations/me', auth_1.requireAuth, async (req, res) => {
-    const q = await pool_1.pool.query(`SELECT bi.*, b.name board_name FROM board_invitations bi JOIN users u ON lower(u.email)=lower(bi.email) JOIN boards b ON b.id=bi.board_id WHERE u.id=$1 AND bi.status='pending'`, [req.user.id]);
+    const q = await pool_1.pool.query(`SELECT bi.*, b.name board_name
+     FROM board_invitations bi
+     JOIN users u ON lower(u.email)=lower(bi.email)
+     JOIN boards b ON b.id=bi.board_id
+     WHERE u.id=$1
+       AND bi.status='pending'
+       AND bi.expires_at > NOW()`, [req.user.id]);
     res.json({ invitations: q.rows });
 });
 exports.invitationsRouter.post('/invitations/:invitationId/accept', auth_1.requireAuth, async (req, res) => {
     const c = await pool_1.pool.connect();
     try {
-        await c.query('BEGIN');
-        const inv = await c.query('UPDATE board_invitations SET status=\'accepted\',responded_at=NOW() WHERE id=$1 AND status=\'pending\' AND lower(email)=lower($2) RETURNING *', [req.params.invitationId, req.user.email]);
+        await c.query('BEGIN ISOLATION LEVEL READ COMMITTED');
+        const inv = await c.query('UPDATE board_invitations SET status=\'accepted\',responded_at=NOW() WHERE id=$1 AND status=\'pending\' AND expires_at > NOW() AND lower(email)=lower($2) RETURNING *', [req.params.invitationId, req.user.email]);
         if (!inv.rowCount) {
             await c.query('ROLLBACK');
             return res.status(404).json({ error: 'Invitation not found' });
@@ -43,6 +49,6 @@ exports.invitationsRouter.post('/invitations/:invitationId/accept', auth_1.requi
     }
 });
 exports.invitationsRouter.post('/invitations/:invitationId/reject', auth_1.requireAuth, async (req, res) => {
-    await pool_1.pool.query('UPDATE board_invitations SET status=\'rejected\',responded_at=NOW() WHERE id=$1 AND status=\'pending\' AND lower(email)=lower($2)', [req.params.invitationId, req.user.email]);
+    await pool_1.pool.query('UPDATE board_invitations SET status=\'rejected\',responded_at=NOW() WHERE id=$1 AND status=\'pending\' AND expires_at > NOW() AND lower(email)=lower($2)', [req.params.invitationId, req.user.email]);
     res.json({ ok: true });
 });

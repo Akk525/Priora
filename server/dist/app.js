@@ -4,6 +4,8 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.app = void 0;
+const fs_1 = __importDefault(require("fs"));
+const path_1 = __importDefault(require("path"));
 const cookie_parser_1 = __importDefault(require("cookie-parser"));
 const cors_1 = __importDefault(require("cors"));
 const dotenv_1 = __importDefault(require("dotenv"));
@@ -23,6 +25,9 @@ const allowedOrigins = (process.env.CLIENT_ORIGIN || 'http://localhost:5173')
     .split(',')
     .map((origin) => origin.trim())
     .filter(Boolean);
+const clientDistPath = path_1.default.resolve(__dirname, '../../client/dist');
+const apiPrefixes = ['/auth', '/boards', '/invitations', '/reports', '/health'];
+exports.app.set('trust proxy', 1);
 exports.app.use((0, cors_1.default)({
     origin(origin, callback) {
         if (!origin || allowedOrigins.includes(origin)) {
@@ -45,6 +50,16 @@ exports.app.use('/boards/:boardId/cards/:cardId/comments', comments_1.commentsRo
 exports.app.use('/boards/:boardId/members', members_1.membersRouter);
 exports.app.use('/', invitations_1.invitationsRouter);
 exports.app.use('/', reports_1.reportsRouter);
+if (fs_1.default.existsSync(clientDistPath)) {
+    exports.app.use(express_1.default.static(clientDistPath));
+    exports.app.get(/.*/, (req, res, next) => {
+        if (apiPrefixes.some((prefix) => req.path === prefix || req.path.startsWith(`${prefix}/`))) {
+            next();
+            return;
+        }
+        res.sendFile(path_1.default.join(clientDistPath, 'index.html'));
+    });
+}
 exports.app.use((err, _req, res, _next) => {
     console.error(err);
     res.status(500).json({ error: 'Internal server error' });

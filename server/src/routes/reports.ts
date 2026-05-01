@@ -4,9 +4,8 @@ import { pool } from '../db/pool';
 import { z } from 'zod';
 
 export const reportsRouter = Router();
-reportsRouter.use(requireAuth);
 
-reportsRouter.get('/boards/:boardId/analytics', allowRoles('owner', 'admin', 'member', 'viewer'), async (req, res) => {
+reportsRouter.get('/boards/:boardId/analytics', requireAuth, allowRoles('owner', 'admin', 'member', 'viewer'), async (req, res) => {
   const boardId = req.params.boardId;
   const total = await pool.query('SELECT COUNT(*)::int count FROM cards WHERE board_id=$1', [boardId]);
   const archived = await pool.query('SELECT COUNT(*)::int count FROM cards WHERE board_id=$1 AND archived=true', [boardId]);
@@ -14,7 +13,7 @@ reportsRouter.get('/boards/:boardId/analytics', allowRoles('owner', 'admin', 'me
   res.json({ total: total.rows[0].count, archived: archived.rows[0].count, overdue: overdue.rows[0].count });
 });
 
-reportsRouter.get('/reports/cards', async (req, res) => {
+reportsRouter.get('/reports/cards', requireAuth, async (req, res) => {
   const schema = z.object({
     boardId: z.string().uuid(),
     columnId: z.string().uuid().optional(),

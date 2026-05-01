@@ -12,13 +12,30 @@ const auth_1 = require("../middleware/auth");
 const auth_2 = require("../utils/auth");
 exports.authRouter = (0, express_1.Router)();
 const schema = zod_1.z.object({ email: zod_1.z.string().email(), password: zod_1.z.string().min(6), name: zod_1.z.string().min(1).optional() });
+const isProduction = process.env.NODE_ENV === 'production';
+function getSessionCookieOptions() {
+    return {
+        httpOnly: true,
+        sameSite: 'lax',
+        secure: isProduction,
+        path: '/',
+    };
+}
 exports.authRouter.post('/register', async (req, res) => {
     const p = schema.safeParse(req.body);
     if (!p.success || !p.data.name)
         return res.status(400).json({ error: 'Invalid payload' });
     const hash = await bcrypt_1.default.hash(p.data.password, 10);
-    const result = await pool_1.pool.query('INSERT INTO users(email,name,password_hash) VALUES($1,$2,$3) RETURNING id,email,name', [p.data.email.toLowerCase(), p.data.name, hash]);
-    res.json({ user: result.rows[0] });
+    try {
+        const result = await pool_1.pool.query('INSERT INTO users(email,name,password_hash) VALUES($1,$2,$3) RETURNING id,email,name', [p.data.email.toLowerCase(), p.data.name, hash]);
+        res.json({ user: result.rows[0] });
+    }
+    catch (error) {
+        if (error?.code === '23505') {
+            return res.status(409).json({ error: 'An account with that email already exists' });
+        }
+        throw error;
+    }
 });
 exports.authRouter.post('/login', async (req, res) => {
     const p = schema.safeParse({ ...req.body, name: 'x' });
@@ -32,14 +49,14 @@ exports.authRouter.post('/login', async (req, res) => {
         return res.status(401).json({ error: 'Invalid credentials' });
     const token = (0, auth_2.genToken)();
     await pool_1.pool.query("INSERT INTO sessions(user_id,token_hash,user_agent,ip_address,expires_at) VALUES($1,$2,$3,$4,NOW()+INTERVAL '7 day')", [user.rows[0].id, (0, auth_2.sha256)(token), req.headers['user-agent'] || null, req.ip || null]);
-    res.cookie('session_token', token, { httpOnly: true, sameSite: 'lax' });
+    res.cookie('session_token', token, getSessionCookieOptions());
     res.json({ user: { id: user.rows[0].id, email: user.rows[0].email, name: user.rows[0].name } });
 });
 exports.authRouter.post('/logout', auth_1.requireAuth, async (req, res) => {
     const token = req.cookies?.session_token;
     if (token)
         await pool_1.pool.query('DELETE FROM sessions WHERE token_hash=$1', [(0, auth_2.sha256)(token)]);
-    res.clearCookie('session_token');
+    res.clearCookie('session_token', getSessionCookieOptions());
     res.json({ ok: true });
 });
 exports.authRouter.get('/me', auth_1.requireAuth, async (req, res) => res.json({ user: req.user }));

@@ -2,6 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.boardsRouter = void 0;
 const express_1 = require("express");
+const zod_1 = require("zod");
 const auth_1 = require("../middleware/auth");
 const pool_1 = require("../db/pool");
 exports.boardsRouter = (0, express_1.Router)();
@@ -14,7 +15,7 @@ exports.boardsRouter.post('/', async (req, res) => {
     const { name, description, color } = req.body;
     const client = await pool_1.pool.connect();
     try {
-        await client.query('BEGIN');
+        await client.query('BEGIN ISOLATION LEVEL READ COMMITTED');
         const b = await client.query('INSERT INTO boards(name,description,color,owner_id) VALUES($1,$2,$3,$4) RETURNING *', [name, description ?? null, color ?? '#4f46e5', req.user.id]);
         const boardId = b.rows[0].id;
         await client.query('INSERT INTO board_members(board_id,user_id,role) VALUES($1,$2,$3)', [boardId, req.user.id, 'owner']);
@@ -40,8 +41,31 @@ exports.boardsRouter.get('/:boardId', (0, auth_1.allowRoles)('owner', 'admin', '
     res.json({ board: b.rows[0] });
 });
 exports.boardsRouter.patch('/:boardId', (0, auth_1.allowRoles)('owner', 'admin'), async (req, res) => {
-    const { name, description, color } = req.body;
-    const b = await pool_1.pool.query('UPDATE boards SET name=COALESCE($1,name),description=$2,color=COALESCE($3,color),updated_at=NOW() WHERE id=$4 RETURNING *', [name ?? null, description ?? null, color ?? null, req.params.boardId]);
+    const parsed = zod_1.z.object({
+        name: zod_1.z.string().min(1).optional(),
+        description: zod_1.z.string().nullable().optional(),
+        color: zod_1.z.string().min(1).optional(),
+    }).safeParse(req.body);
+    if (!parsed.success)
+        return res.status(400).json({ error: 'Invalid board payload' });
+    const hasName = Object.prototype.hasOwnProperty.call(parsed.data, 'name');
+    const hasDescription = Object.prototype.hasOwnProperty.call(parsed.data, 'description');
+    const hasColor = Object.prototype.hasOwnProperty.call(parsed.data, 'color');
+    const b = await pool_1.pool.query(`UPDATE boards SET
+      name=CASE WHEN $1 THEN $2 ELSE name END,
+      description=CASE WHEN $3 THEN $4 ELSE description END,
+      color=CASE WHEN $5 THEN $6 ELSE color END,
+      updated_at=NOW()
+     WHERE id=$7
+     RETURNING *`, [
+        hasName,
+        parsed.data.name ?? null,
+        hasDescription,
+        parsed.data.description ?? null,
+        hasColor,
+        parsed.data.color ?? null,
+        req.params.boardId,
+    ]);
     res.json({ board: b.rows[0] });
 });
 exports.boardsRouter.delete('/:boardId', (0, auth_1.allowRoles)('owner'), async (req, res) => {

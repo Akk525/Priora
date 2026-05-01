@@ -6,15 +6,14 @@ const auth_1 = require("../middleware/auth");
 const pool_1 = require("../db/pool");
 const zod_1 = require("zod");
 exports.reportsRouter = (0, express_1.Router)();
-exports.reportsRouter.use(auth_1.requireAuth);
-exports.reportsRouter.get('/boards/:boardId/analytics', (0, auth_1.allowRoles)('owner', 'admin', 'member', 'viewer'), async (req, res) => {
+exports.reportsRouter.get('/boards/:boardId/analytics', auth_1.requireAuth, (0, auth_1.allowRoles)('owner', 'admin', 'member', 'viewer'), async (req, res) => {
     const boardId = req.params.boardId;
     const total = await pool_1.pool.query('SELECT COUNT(*)::int count FROM cards WHERE board_id=$1', [boardId]);
     const archived = await pool_1.pool.query('SELECT COUNT(*)::int count FROM cards WHERE board_id=$1 AND archived=true', [boardId]);
     const overdue = await pool_1.pool.query("SELECT COUNT(*)::int count FROM cards WHERE board_id=$1 AND archived=false AND due_date < CURRENT_DATE", [boardId]);
     res.json({ total: total.rows[0].count, archived: archived.rows[0].count, overdue: overdue.rows[0].count });
 });
-exports.reportsRouter.get('/reports/cards', async (req, res) => {
+exports.reportsRouter.get('/reports/cards', auth_1.requireAuth, async (req, res) => {
     const schema = zod_1.z.object({
         boardId: zod_1.z.string().uuid(),
         columnId: zod_1.z.string().uuid().optional(),
