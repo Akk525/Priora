@@ -157,7 +157,7 @@ Implemented endpoints include:
   - identifying build and routing bugs
   - improving Railway deployment configuration
   - reviewing backend auth, report, and invitation flows
-  - drafting Stage 3 explanation material for indexes, transactions, and security
+  - UI
 - Verification and modification:
   - all generated code was reviewed, edited, and tested locally and on Railway
   - deployment changes were validated with live HTTP checks and Railway logs
